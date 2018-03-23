@@ -378,7 +378,6 @@ def classify(dataset, file, k):
     for e in disList:
         countClass[e[0]-1] += 1
     maxClass = countClass.index(max(countClass)) + 1
-    print(file, ' is classified to ', maxClass)
     return maxClass
 
 
@@ -409,10 +408,17 @@ if __name__ == '__main__':
     [0.92330387057178165, 0.06615674923516697, 0.95760391858329741, 0.47180601021114554, 6],
     [0.97547663718750333, 0.44042701132631396, 0.94553099990460598, 0.53254660014344912, 7]]
 
+    mxConfusion = np.zeros(49)
+    mxConfusion = mxConfusion.reshape(7, 7)
+
     files = []
     for i in [2,4,6]:
         for j in range(1,8):
             filename = r'.\image\bdd\pose' + str(j) + '_' + str(i) + '.png'
             files.append([filename, j])
     for file in files:
-        classify(dataset, file[0], 3)
+        nbClass = classify(dataset, file[0], 3)
+        print(file[0], ' is classified to ', nbClass)
+        mxConfusion[file[1] - 1][nbClass - 1] += 1
+
+    print(mxConfusion)
