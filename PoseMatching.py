@@ -39,7 +39,7 @@ def skeleton(img1):
     return graph
 
 def firstFilter(graph):
-    # first filter delete nodes
+    # first filter delete useless nodes
     start = time.time()
     for i in range(5):
         node_remove_list = []
@@ -102,6 +102,7 @@ def secondFilter(graph):
             tmpLength = len(graph.nodes())
     # print('second filter : ', time.time()-start)
 
+# group the same nodes
 def thirdFilter(graph):
     start = time.time()
     # third filter
@@ -144,6 +145,7 @@ def thirdFilter(graph):
 
     # print('third filter : ', time.time()-start)
 
+# delete circle in graph
 def deleteCircle(graph):
     edge_to_delete = []
     for e in graph.edges(data=True):
@@ -152,9 +154,10 @@ def deleteCircle(graph):
     for e in edge_to_delete:
         graph.remove_edge(e[0], e[1])
 
+# search body and trunk
 def searchTrunk(graph):
     start = time.time()
-    # calculate tezheng
+    # calculate caracters
     center1 = None
     center2 = None
     trunk = []
@@ -193,6 +196,7 @@ def searchTrunk(graph):
                     node_list.append(n)
                     distance_list.append(e[2]['weight'])
 
+    # the arc of head has the shortest length
     head = node_list[distance_list.index(min(distance_list))]
 
     for n in node_list:
@@ -228,6 +232,7 @@ def drawGraph(graph):
     plt.title('Build Graph')
     plt.show()
 
+# calculate weights of 5 body parts
 def calculateWeight(graph, head, lefthand, righthand, leftleg, rightleg):
     for e in graph.edges(data=True):
         if head in [e[0], e[1]]:
@@ -242,6 +247,7 @@ def calculateWeight(graph, head, lefthand, righthand, leftleg, rightleg):
             weight_rightleg = e[2]['weight']
     return weight_head, weight_lefthand, weight_righthand, weight_leftleg, weight_rightleg
 
+# calculate the euclidien distance between two nodes
 def calEuclideanDistance(posi1_x, posi1_y, posi2_x, posi2_y):
     a = np.square(posi1_x - posi2_x)
     b = np.square(posi1_y - posi2_y)
@@ -250,6 +256,7 @@ def calEuclideanDistance(posi1_x, posi1_y, posi2_x, posi2_y):
     # dist = math.sqrt(sum(np.square(posi1_x - posi2_x), np.square(posi1_y - posi2_y)))
     return dist
 
+# calculate all the euclidien distance of the 5 body parts
 def calculateDistance(graph, center1, center2, head, lefthand, righthand, leftleg, rightleg):
     node = graph.node
     center1_x, center1_y = node[center1]['o'][1], node[center1]['o'][0]
@@ -267,6 +274,7 @@ def calculateDistance(graph, center1, center2, head, lefthand, righthand, leftle
     dis_rightleg = calEuclideanDistance(rightleg_x, rightleg_y, center2_x, center2_y)
     return dis_head, dis_lefthand, dis_righthand, dis_leftleg, dis_rightleg
 
+# calculate the angle of two nodes
 def calculateAngle(posi1_x, posi1_y, posi2_x, posi2_y):
     dis = calEuclideanDistance(posi1_x, posi1_y, posi2_x, posi2_y)
     dis_x = abs(posi1_x - posi2_x)
@@ -275,6 +283,7 @@ def calculateAngle(posi1_x, posi1_y, posi2_x, posi2_y):
     angle2 = angle * 360 / 2 / np.pi
     return angle2
 
+# calculate all the angles of 5 body parts and center
 def calculateAngles(graph, center1, center2, head, lefthand, righthand, leftleg, rightleg):
     node = graph.node
     center1_x, center1_y = node[center1]['o'][1], node[center1]['o'][0]
@@ -292,16 +301,19 @@ def calculateAngles(graph, center1, center2, head, lefthand, righthand, leftleg,
     angle_rightleg = calculateAngle(rightleg_x, rightleg_y, center2_x, center2_y)
     return angle_head, angle_lefthand, angle_righthand, angle_leftleg, angle_rightleg
 
+# calculate dataset
 def calculateDataset(graph):
     center1, center2, head, lefthand, righthand, leftleg, rightleg = searchTrunk(graph)
     node = graph.node
     # data = [X, Y, weight, distance, degree]
+    # save positions
     data_head = [node[head]['o'][1], node[head]['o'][0]]
     data_lefthand = [node[lefthand]['o'][1], node[lefthand]['o'][0]]
     data_righthand = [node[righthand]['o'][1], node[righthand]['o'][0]]
     data_leftleg = [node[leftleg]['o'][1], node[leftleg]['o'][0]]
     data_rightleg = [node[rightleg]['o'][1], node[rightleg]['o'][0]]
 
+    # calculate weights
     weight_head, weight_lefthand, weight_righthand, weight_leftleg, weight_rightleg = calculateWeight(graph, head, lefthand, righthand, leftleg, rightleg)
     data_head.append(weight_head)
     data_lefthand.append(weight_lefthand)
@@ -309,6 +321,7 @@ def calculateDataset(graph):
     data_leftleg.append(weight_leftleg)
     data_rightleg.append(weight_rightleg)
 
+    # calculate euclidien distances
     dis_head, dis_lefthand, dis_righthand, dis_leftleg, dis_rightleg = calculateDistance(graph, center1, center2, head, lefthand, righthand, leftleg, rightleg)
     data_head.append(dis_head)
     data_lefthand.append(dis_lefthand)
@@ -316,6 +329,7 @@ def calculateDataset(graph):
     data_leftleg.append(dis_leftleg)
     data_rightleg.append(dis_rightleg)
 
+    # calculate angles
     angle_head, angle_lefthand, angle_righthand, angle_leftleg, angle_rightleg = calculateAngles(graph, center1, center2, head, lefthand, righthand, leftleg, rightleg)
     data_head.append(angle_head)
     data_lefthand.append(angle_lefthand)
@@ -325,7 +339,9 @@ def calculateDataset(graph):
 
     return data_head, data_lefthand, data_righthand, data_leftleg, data_rightleg
 
+# learning process
 def learning():
+    # add to learning dataset
     files = []
     for i in [1,3,5]:
         for j in range(1,8):
@@ -351,6 +367,7 @@ def learning():
         # drawGraph(graph)
     return data
 
+# classify the new image with the dataset
 def classify(dataset, file, k):
     img = lireFichier(file)
     graph = skeleton(img)
@@ -410,15 +427,21 @@ if __name__ == '__main__':
 
     mxConfusion = np.zeros(49)
     mxConfusion = mxConfusion.reshape(7, 7)
-
+    nbCount = 0
+    nbCorrect = 0
     files = []
+    k = 1
     for i in [2,4,6]:
         for j in range(1,8):
             filename = r'.\image\bdd\pose' + str(j) + '_' + str(i) + '.png'
             files.append([filename, j])
+            nbCount += 1
     for file in files:
-        nbClass = classify(dataset, file[0], 3)
+        nbClass = classify(dataset, file[0], k)
         print(file[0], ' is classified to ', nbClass)
         mxConfusion[file[1] - 1][nbClass - 1] += 1
+        if(file[1] - 1) == (nbClass - 1):
+            nbCorrect += 1
 
     print(mxConfusion)
+    print('Correct Rate : ', nbCorrect / nbCount * 100, '%')
